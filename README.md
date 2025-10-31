@@ -1,5 +1,7 @@
 # Funktional - Garmin Watchface
 
+<img src="./assets/Screen.png"/>
+
 A minimalist and functional watchface for Garmin smartwatches.
 
 ## Features
