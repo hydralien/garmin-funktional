@@ -2,7 +2,9 @@
 
 <img src="./assets/Screen.png"/>
 
-A minimalist and functional watchface for Garmin smartwatches.
+A minimalist watchface for Garmin smartwatches with date, dime, day of week and basic stats.
+
+Could be ssen [In Garmin store](https://apps.garmin.com/apps/fd726a31-8aba-488c-84b8-d13db5879d41).
 
 ## Features
 
@@ -53,6 +55,7 @@ connectiq
 1. Install the "Monkey C" extension from Garmin
 2. Open the project folder
 3. Press F5 to build and run in the simulator
+4. For production, open command palette (Cmp+Shift+P) and find "Monkey C: Export Project"
 
 ## Compatible Devices
 
