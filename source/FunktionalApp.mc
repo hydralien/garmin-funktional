@@ -19,6 +19,5 @@ class FunktionalApp extends Application.AppBase {
     function getInitialView() {
         return [ new FunktionalView() ];
     }
-
 }
 

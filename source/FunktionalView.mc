@@ -12,6 +12,8 @@ class FunktionalView extends WatchUi.WatchFace {
     
     var iconFont;
 
+    var lowPowerMode = false;
+
     public function dayofWeekName(dow) {
         switch (dow) {
             case 1:
@@ -33,8 +35,24 @@ class FunktionalView extends WatchUi.WatchFace {
         }
     }
 
+    public function heightPctCoord(dc, pct) {
+        return Math.round(dc.getHeight() * (pct/100.0));
+    }
+
+    public function widthPctCoord(dc, pct) {
+        return Math.round(dc.getWidth() * (pct/100.0));
+    }
+
     function initialize() {
         WatchFace.initialize();
+    }
+
+    function onEnterSleep() as Void {
+        lowPowerMode = true;
+    }
+
+    function onExitSleep() as Void {
+        lowPowerMode = false;
     }
 
     // Load your resources here
@@ -87,11 +105,11 @@ class FunktionalView extends WatchUi.WatchFace {
         dc.clear();
         
         // Get screen dimensions
-        var width = dc.getWidth();
-        var height = dc.getHeight();
-        var centerX = width / 2;
-        var centerY = height / 2;
-
+        var centerX = widthPctCoord(dc, 50);
+        var centerY = heightPctCoord(dc, 50);
+        
+        // Draw seconds dot
+        drawSecondsDot(dc, clockTime.sec, centerX, centerY);
 
         // Check if we should use 24-hour or 12-hour format
         if (!System.getDeviceSettings().is24Hour) {
@@ -105,20 +123,18 @@ class FunktionalView extends WatchUi.WatchFace {
             }
 
             dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
-            var horizontalShiftDaypart = centerX + 85;
+            var horizontalShiftDaypart = widthPctCoord(dc, 85
+            );
             // if (timeFormatAppend == "AM") {
                 // dc.drawText(horizontalShiftDaypart, centerY - 40, Graphics.FONT_SYSTEM_MEDIUM, timeFormatAppend, Graphics.TEXT_JUSTIFY_LEFT);
             // } else {
-                dc.drawText(horizontalShiftDaypart, centerY - 20, Graphics.FONT_SYSTEM_MEDIUM, timeFormatAppend, Graphics.TEXT_JUSTIFY_LEFT  | Graphics.TEXT_JUSTIFY_VCENTER);
+                dc.drawText(horizontalShiftDaypart, centerY - 15, Graphics.FONT_SMALL, timeFormatAppend, Graphics.TEXT_JUSTIFY_LEFT | Graphics.TEXT_JUSTIFY_VCENTER);
             // }
         }
-        
+
         var hoursString = hours.format("%02u");
         var minutesString = clockTime.min.format("%02u");
         var timeString = Lang.format(timeFormat, [hoursString, minutesString]);
-
-        // Draw seconds dot
-        drawSecondsDot(dc, clockTime.sec, centerX, centerY);
 
         // Draw time in the center
         dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
@@ -126,18 +142,22 @@ class FunktionalView extends WatchUi.WatchFace {
 
         // Draw day of week above time
         dc.setColor(Graphics.COLOR_GREEN | Graphics.COLOR_YELLOW, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(centerX, centerY - 70, Graphics.FONT_MEDIUM, dayOfWeek, Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
+        dc.drawText(centerX, heightPctCoord(dc, 25), Graphics.FONT_MEDIUM, dayOfWeek, Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
 
         // Draw date below time
-        dc.drawText(centerX, centerY + 30, Graphics.FONT_SMALL, dateString, Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
+        dc.drawText(centerX, heightPctCoord(dc, 63), Graphics.FONT_MEDIUM, dateString, Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
 
         
         // Draw indicators
-        drawIndicators(dc, heartRate, steps, activeMinutes, battery, width, height);
+        drawIndicators(dc, heartRate, steps, activeMinutes, battery);
     }
 
     // Draw the seconds as a rotating dot
     function drawSecondsDot(dc, seconds, centerX, centerY) {
+        if (lowPowerMode) {
+            return;
+        }
+
         // Calculate angle (0 seconds = top, 15 seconds = right, 30 seconds = bottom, 45 seconds = left)
         // Angle in radians: 0 is at 3 o'clock position, so we need to adjust
         var angle = (seconds * 6 - 90) * Math.PI / 180.0; // 6 degrees per second, -90 to start at top
@@ -153,39 +173,43 @@ class FunktionalView extends WatchUi.WatchFace {
     }
 
     // Draw indicators for heart rate, steps, active minutes, and battery
-    function drawIndicators(dc, heartRate, steps, activeMinutes, battery, width, height) {
-        var centerX = dc.getWidth() / 2;
-        var centerY = dc.getHeight() / 2;
+    function drawIndicators(dc, heartRate, steps, activeMinutes, battery) {
+        var centerX = widthPctCoord(dc, 50);
 
         // Battery (top) - Icon: B
+        var batteryPos = heightPctCoord(dc, 8);
         dc.setColor(Graphics.COLOR_DK_GRAY, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(centerX, centerY - 122, iconFont, "B", Graphics.TEXT_JUSTIFY_RIGHT);
+        dc.drawText(centerX, batteryPos, iconFont, "B", Graphics.TEXT_JUSTIFY_RIGHT | Graphics.TEXT_JUSTIFY_VCENTER);
         dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(centerX, centerY - 120, Graphics.FONT_SMALL, battery.toString() + "%", Graphics.TEXT_JUSTIFY_LEFT);
+        dc.drawText(centerX, batteryPos, Graphics.FONT_SMALL, battery.toString() + "%", Graphics.TEXT_JUSTIFY_LEFT | Graphics.TEXT_JUSTIFY_VCENTER);
         
+        var indicatorVerticalCoord = heightPctCoord(dc, 78);
         // Active minutes (left) - Icon: A
         dc.setColor(Graphics.COLOR_GREEN, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(centerX - 5, centerY + 50, iconFont, "A", Graphics.TEXT_JUSTIFY_RIGHT);
+        dc.drawText(centerX - 5, indicatorVerticalCoord, iconFont, "A", Graphics.TEXT_JUSTIFY_RIGHT | Graphics.TEXT_JUSTIFY_VCENTER);
         dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(centerX - 37, centerY + 50, Graphics.FONT_SMALL, activeMinutes.toString() + "m", Graphics.TEXT_JUSTIFY_RIGHT);
+        dc.drawText(centerX - 37, indicatorVerticalCoord, Graphics.FONT_SMALL, activeMinutes.toString() + "m", Graphics.TEXT_JUSTIFY_RIGHT | Graphics.TEXT_JUSTIFY_VCENTER);
         
         // Steps (right) - Icon: S
         dc.setColor(Graphics.COLOR_BLUE, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(centerX + 5, centerY + 50, iconFont, "S", Graphics.TEXT_JUSTIFY_LEFT);
+        dc.drawText(centerX + 5, indicatorVerticalCoord, iconFont, "S", Graphics.TEXT_JUSTIFY_LEFT | Graphics.TEXT_JUSTIFY_VCENTER);
         dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(centerX + 37, centerY + 50, Graphics.FONT_SMALL, steps.toString(), Graphics.TEXT_JUSTIFY_LEFT);
+        dc.drawText(centerX + 37, indicatorVerticalCoord, Graphics.FONT_SMALL, steps.toString(), Graphics.TEXT_JUSTIFY_LEFT | Graphics.TEXT_JUSTIFY_VCENTER);
         
+        if (lowPowerMode) {
+            return;
+        }
 
         // Heart rate (bottom) - Icon: H
         dc.setColor(Graphics.COLOR_RED, Graphics.COLOR_TRANSPARENT);
-        var verticalShiftHr = centerY + 90;
-        dc.drawText(centerX, verticalShiftHr, iconFont, "H", Graphics.TEXT_JUSTIFY_RIGHT);
+        var verticalShiftHr = heightPctCoord(dc, 90);
+        dc.drawText(centerX, verticalShiftHr, iconFont, "H", Graphics.TEXT_JUSTIFY_RIGHT | Graphics.TEXT_JUSTIFY_VCENTER);
         dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
         if (heartRate != null) {
-            dc.drawText(centerX, verticalShiftHr, Graphics.FONT_SMALL, heartRate.toString(), Graphics.TEXT_JUSTIFY_LEFT);
+            dc.drawText(centerX, verticalShiftHr, Graphics.FONT_SMALL, heartRate.toString(), Graphics.TEXT_JUSTIFY_LEFT | Graphics.TEXT_JUSTIFY_VCENTER);
         } else {
             dc.setColor(Graphics.COLOR_DK_GRAY, Graphics.COLOR_TRANSPARENT);
-            dc.drawText(centerX, verticalShiftHr, Graphics.FONT_SMALL, "--", Graphics.TEXT_JUSTIFY_LEFT);
+            dc.drawText(centerX, verticalShiftHr, Graphics.FONT_SMALL, "--", Graphics.TEXT_JUSTIFY_LEFT | Graphics.TEXT_JUSTIFY_VCENTER);
         }
         
     }
@@ -195,14 +219,5 @@ class FunktionalView extends WatchUi.WatchFace {
     // memory.
     function onHide() {
     }
-
-    // The user has just looked at their watch. Timers and animations may be started here.
-    function onExitSleep() {
-    }
-
-    // Terminate any active timers and prepare for slow updates.
-    function onEnterSleep() {
-    }
-
 }
 
